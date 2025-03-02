@@ -6,8 +6,54 @@
 //
 
 import XCTest
+import FeedEssential
+
+class URLSessionHTTPClient{
+    
+    private let session: URLSession
+
+        init(session: URLSession = .shared) {
+            self.session = session
+        }
+
+        func get(from url: URL, completion: @escaping (HTTPClientResult) -> Void) {
+            session.dataTask(with: url) { _, _, error in
+                if let error = error {
+                    completion(.failure(error))
+                }
+            }
+        }
+}
+
+class URLSessionMock : URLSession,@unchecked Sendable {
+
+    var receivedUrls: [URL] = []
+    
+    override func dataTask(with request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, (any Error)?) -> Void) -> URLSessionDataTask {
+        self.receivedUrls.append(request.url!)
+        return URLSessionDataTaskMock()
+    }
+    
+}
+
+class URLSessionDataTaskMock : URLSessionDataTask ,@unchecked Sendable{
+    
+    override func resume() {
+    }
+}
 
 final class URLSessionHTTPClientTest: XCTestCase {
+    
+    
+    func test(){
+        let url = URL(string: "https://any-url.com")
+        let session = URLSessionMock()
+        let sut = URLSessionHTTPClient(session: session)
+        sut.get(from: url!){ _ in}
+        
+        XCTAssertEqual(session.receivedUrls, [url!])
+        
+    }
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
